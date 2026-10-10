@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>numerical analysis method solver</title>
+    <style>
+        :root { --accent: #00e5ff; --bg: #1e1e1e; --card: #2d2d2d; --text: #e0e0e0; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        header h1 { color: var(--accent); margin: 0; font-size: 1.8rem; }
+        header p  { color: #666; margin: 6px 0 0; font-size: 0.85rem; }
+        .section-header { color: #ffcc00; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 40px; border-left: 4px solid #ffcc00; padding-left: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 15px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #444; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        .card h3 { margin-top: 0; color: var(--accent); font-size: 1rem; }
+        .inputs { background: #111; padding: 12px; border-radius: 8px; }
+        label { display: block; font-size: 0.7rem; margin-bottom: 3px; color: #888; margin-top: 6px; }
+        input, textarea, select { width: 100%; padding: 8px; margin-bottom: 6px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; font-family: monospace; font-size: 0.85rem; }
+        textarea { height: 70px; resize: none; }
+        .row { display: flex; gap: 8px; }
+        .row input, .row select { flex: 1; }
+        button.primary   { width:100%; padding:9px; background:var(--accent); border:none; border-radius:4px; font-weight:bold; cursor:pointer; color:#111; margin-top:6px; font-size:0.9rem; }
+        button.primary:hover { opacity:0.85; }
+        button.secondary { width:100%; padding:7px; background:#333; border:1px solid #555; border-radius:4px; font-weight:bold; cursor:pointer; color:#ccc; margin-top:4px; font-size:0.82rem; }
+        button.secondary:hover { background:#444; }
+        .derived-label { font-size:0.78rem; color:#00e5ff; background:#0a1a1f; border:1px solid #00e5ff44; border-radius:4px; padding:6px 10px; margin-bottom:6px; font-family:monospace; min-height:30px; }
+        .hint { font-size:0.67rem; color:#555; margin:-3px 0 6px; }
+        /* Modal */
+        #modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; }
+        .modal-content  { background:#fff; color:#222; width:95%; max-width:1100px; margin:2% auto; padding:24px; border-radius:12px; max-height:90vh; overflow-y:auto; }
+        .modal-header   { display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:16px; }
+        .modal-header h2 { margin:0; font-size:1.1rem; }
+        .close-btn { background:#ff4444; color:white; border:none; padding:7px 14px; border-radius:4px; cursor:pointer; font-weight:bold; }
+        table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+        th, td { border:1px solid #ddd; padding:7px 10px; text-align:center; font-family:monospace; }
+        th { background:#f0f4f8; font-weight:600; }
+        tr:nth-child(even) td { background:#fafafa; }
+        .root-box { margin-top:14px; padding:12px 18px; background:#f0fff4; border:1px solid #a8e6c0; border-radius:8px; font-size:1rem; }
+        .root-box span { color:#c62828; font-weight:bold; font-size:1.2rem; }
+        .error-box { background:#fff5f5; border:1px solid #ffcccc; border-radius:6px; padding:12px; color:#c62828; font-family:monospace; font-size:0.85rem; }
+        .ans-highlight { color:#d32f2f; font-weight:bold; font-size:1.1rem; }
+        .loading { color:#888; font-style:italic; text-align:center; padding:30px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>numerical analysis method solver</h1>
+</header>
+
+<div style="max-width:560px;margin:0 auto 10px;text-align:center;">
+    <label style="color:#aaa;font-size:0.8rem;">global f(x) — used for chapter 1 methods</label>
+    <input type="text" id="global-f" value="-0.9*x^2 + 1.7*x + 2.5"
+           style="text-align:center;font-size:1rem;border-color:#00e5ff55;">
+    <p class="hint">Syntax: <code>x^2</code>,<code>for power</code>, <code>sqrt(x)</code>, <code>sin(x)</code>,
+        <code>cos(x)</code>, <code>log(x)</code>, <code>exp(x)</code> — use <code>*</code> for multiply</p>
+</div>
+
+<h2 class="section-header">chapter 1</h2>
+<div class="grid">
+
+    <div class="card">
+        <h3>bisection &amp; false position</h3>
+        <div class="inputs">
+            <label>XL:</label>
+            <input type="number" id="xl" value="" step="any">
+            <label>XU:</label>
+            <input type="number" id="xu" value="" step="any">
+            <label>Stopping condition:</label>
+            <div class="row">
+                <select id="bfp-mode">
+                    <option value="e">Error εa (%)</option>
+                    <option value="i">Iterations</option>
+                </select>
+                <input type="number" id="bfp-stop" value="" step="any">
+            </div>
+            <button class="primary"   onclick="callMethod('bisection')">▶ bisection</button>
+            <button class="secondary" onclick="callMethod('false_position')">▶ false position</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>simple fixed point</h3>
+        <div class="inputs">
+            <label>g(x) &nbsp;<span style="color:#555">(x = g(x))</span>:</label>
+            <input type="text" id="gx" placeholder="e.g.  sqrt(1.9*x + 2.8)">
+            <label>x0 (initial guess):</label>
+            <input type="number" id="fp-x0" value="" step="any">
+            <label>Stopping condition:</label>
+            <div class="row">
+                <select id="fp-mode">
+                    <option value="e">error εa (%)</option>
+                    <option value="i">iterations</option>
+                </select>
+                <input type="number" id="fp-stop" value="" step="any">
+            </div>
+            <button class="primary" onclick="callMethod('fixed_point')">▶ calculate</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>newton &amp; secant</h3>
+        <div class="inputs">
+            <label>f'(x) &nbsp;<span style="color:#555">(auto-computed for Newton)</span>:</label>
+            <div class="derived-label" id="dfx-display">— will appear after newton solve —</div>
+            <label>xi (initial guess):</label>
+            <input type="number" id="ns-xi" value="" step="any">
+            <label>xi-1 &nbsp;<span style="color:#555">(Secant only)</span>:</label>
+            <input type="number" id="ns-xim1" value="" step="any">
+            <label>Stopping condition:</label>
+            <div class="row">
+                <select id="ns-mode">
+                    <option value="e">error εa (%)</option>
+                    <option value="i">iterations</option>
+                </select>
+                <input type="number" id="ns-stop" value="" step="any">
+            </div>
+            <button class="primary"   onclick="callMethod('newton')">▶ newton Method</button>
+            <button class="secondary" onclick="callMethod('secant')">▶ secant Method</button>
+        </div>
+    </div>
+
+</div>
+
+<h2 class="section-header">chapter 2</h2>
+<div class="grid">
+    <div class="card" style="grid-column:span 2;">
+        <h3>system solver — [A]{x} = {B}</h3>
+        <div class="inputs">
+            <label>matrix [A] (one row per line, values space-separated):</label>
+            <textarea id="c2-a"></textarea>
+            <label>vector {B} (space-separated):</label>
+            <input type="text" id="c2-b" value="">
+            <div class="row" style="margin-top:4px;">
+                <button class="primary"   onclick="calcGauss()">gauss elimination</button>
+                <button class="primary"   onclick="calcLU()">LU decomposition</button>
+                <button class="secondary" onclick="calcCramer()">cramer rule</button>
+                <button class="secondary" onclick="calcjordon()">gauss-jordan</button>
+                <button class="secondary" onclick="calcPartial()">partial pivoting</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-overlay" onclick="closeOutside(event)">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modal-title">Result</h2>
+            <button class="close-btn" onclick="closeModal()">✕ CLOSE</button>
+        </div>
+        <div id="modal-result"></div>
+    </div>
+</div>
+
+<script>
+const API = 'http://localhost:5050';
+
+/* Opens the result modal, sets its title and injects the provided HTML content */
+function openModal(title, html) {
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-result').innerHTML = html;
+    document.getElementById('modal-overlay').style.display = 'block';
+}
+/* Hides the result modal */
+function closeModal()       { document.getElementById('modal-overlay').style.display = 'none'; }
+/* Closes the modal when the user clicks the dark overlay outside the content box */
+function closeOutside(e)    { if (e.target.id === 'modal-overlay') closeModal(); }
+/* Opens the modal with a spinner while waiting for the C++ solver to respond */
+function showLoading(title) { openModal(title, '<div class="loading">⏳ Solving via C++ + muParser...</div>'); }
+/* Opens the modal with a styled error message */
+function showError(title, msg) { openModal(title, `<div class="error-box">⚠ ${msg}</div>`); }
+
+/* Builds an HTML table from an array of row objects.
+   headers : column header labels
+   rows    : array of data objects
+   keys    : object keys to read from each row, in column order */
+function makeTable(headers, rows, keys) {
+    let h = '<table><tr>' + headers.map(s => `<th>${s}</th>`).join('') + '</tr>';
+    rows.forEach(row => {
+        h += '<tr>' + keys.map(k => `<td>${row[k] ?? '—'}</td>`).join('') + '</tr>';
+    });
+    return h + '</table>';
+}
+/* Returns an HTML div displaying the final root value, or empty string if none */
+function rootBox(root) {
+    return root ? `<div class="root-box">Final Root ≈ <span>${root}</span></div>` : '';
+}
+const METHOD_TITLES = {
+    bisection:      'Bisection Method',
+    false_position: 'False Position Method',
+    newton:         'Newton Method',
+    secant:         'Secant Method',
+    fixed_point:    'Simple Fixed Point'
+};
+
+/* Main dispatcher: collects inputs for the given method, posts them to the Flask
+   server, and renders the iteration table + final root in the modal.
+   method : one of 'bisection', 'false_position', 'newton', 'secant', 'fixed_point' */
+async function callMethod(method) {
+    const title = METHOD_TITLES[method];
+    showLoading(title);
+
+    const fx = document.getElementById('global-f').value.trim();
+    let payload = { fx };
+
+    if (method === 'bisection' || method === 'false_position') {
+        payload.xl    = document.getElementById('xl').value;
+        payload.xu    = document.getElementById('xu').value;
+        payload.mode  = document.getElementById('bfp-mode').value;
+        payload.value = document.getElementById('bfp-stop').value;
+    } else if (method === 'newton') {
+        payload.x0    = document.getElementById('ns-xi').value;
+        payload.mode  = document.getElementById('ns-mode').value;
+        payload.value = document.getElementById('ns-stop').value;
+    } else if (method === 'secant') {
+        payload.xi       = document.getElementById('ns-xi').value;
+        payload.xi_minus = document.getElementById('ns-xim1').value;
+        payload.mode     = document.getElementById('ns-mode').value;
+        payload.value    = document.getElementById('ns-stop').value;
+    } else if (method === 'fixed_point') {
+        payload = {
+            gx:    document.getElementById('gx').value.trim(),
+            x0:    document.getElementById('fp-x0').value,
+            mode:  document.getElementById('fp-mode').value,
+            value: document.getElementById('fp-stop').value
+        };
+    }
+
+    try {
+        const data = await fetch(`${API}/solve/${method}`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+        }).then(r => r.json());
+
+        if (data.error) { showError(title, data.error); return; }
+
+        if (method === 'newton' && data.dfx)
+            document.getElementById('dfx-display').textContent = data.dfx;
+
+        let html = '';
+        if (method === 'bisection' || method === 'false_position') {
+            html = makeTable(
+                ['i','XL','f(XL)','XU','f(XU)','XR','f(XR)','Error %'],
+                data.rows, ['iter','xl','fxl','xu','fxu','xr','fxr','error']
+            );
+        } else if (method === 'newton') {
+            html = makeTable(
+                ['i','Xi','f(Xi)','f\'(Xi)','Error %'],
+                data.rows, ['iter','xi','fxi','dfxi','error']
+            );
+        } else if (method === 'secant') {
+            html = makeTable(
+                ['i','Xi-1','f(Xi-1)','Xi','f(Xi)','Error %'],
+                data.rows, ['iter','xim1','fxim1','xi','fxi','error']
+            );
+        } else if (method === 'fixed_point') {
+            html = makeTable(
+                ['i','Xi','g(Xi) = Xi+1','Error %'],
+                data.rows, ['iter','xi','gxi','error']
+            );
+        }
+
+        openModal(title, html + rootBox(data.root));
+
+    } catch {
+        showError(title, 'Cannot reach server.<br>Run: <code>python server.py</code>');
+    }
+}
+/* Reads matrix [A] and vector {B} from the Chapter 2 textarea/input fields
+   and returns them as 2D array, 1D array, and size n */
+function getMatrix() {
+    let A = document.getElementById('c2-a').value.trim().split('\n')
+              .map(r => r.trim().split(/\s+/).map(Number));
+    let B = document.getElementById('c2-b').value.trim().split(/\s+/).map(Number);
+    return { A, B, n: B.length };
+}
+/* Performs Gauss Elimination on [A|B], showing each row-reduction step,
+   then solves for x via back substitution and displays results in the modal */
+function calcGauss() {
+    let { A, B, n } = getMatrix();
+    let steps = ["<h4>Starting Matrix [A|B]:</h4>" + formatGaussStep(A, B)];
+
+    for (let i = 0; i < n; i++) {
+        for (let k = i + 1; k < n; k++) {
+            let factor = A[k][i] / A[i][i];
+            steps.push(`Row ${k+1} = Row ${k+1} - (${factor.toFixed(3)}) * Row ${i+1}`);
+            
+            B[k] -= factor * B[i];
+            for (let j = i; j < n; j++) {
+                A[k][j] -= factor * A[i][j];
+            }
+            steps.push(formatGaussStep(A, B));
+        }
+    }
+
+    let x = new Array(n).fill(0);
+    for (let i = n - 1; i >= 0; i--) {
+        let s = 0;
+        for (let j = i + 1; j < n; j++) s += A[i][j] * x[j];
+        x[i] = (B[i] - s) / A[i][i];
+    }
+
+    let resultHtml = steps.join('<hr>') + 
+        "<h4>Final Solutions:</h4>" + 
+        x.map((v, i) => `<p>x${i+1} = <span class="ans-highlight">${v.toFixed(6)}</span></p>`).join('');
+    
+    openModal("Gauss Elimination Steps", resultHtml);
+}
+
+/* Renders the augmented matrix [A|B] as an HTML table, highlighting
+   the B column with a left border and yellow background */
+function formatGaussStep(A, B) {
+    let html = "<table>";
+    for (let i = 0; i < A.length; i++) {
+        html += "<tr>";
+        for (let j = 0; j < A[i].length; j++) {
+            html += `<td>${A[i][j].toFixed(3)}</td>`;
+        }
+        html += `<td style='border-left: 2px solid #000; background: #fffde7;'>${B[i].toFixed(3)}</td></tr>`;
+    }
+    return html + "</table>";
+}
+/* Performs LU Decomposition on A, then solves [A]{x}={B} in three steps:
+   (1) decompose A into L and U, (2) forward substitution Ly=B, (3) back substitution Ux=y */
+function calcLU() {
+    let { A, B, n } = getMatrix();
+
+    let L = Array.from({length: n}, (_, i) => Array.from({length: n}, (_, j) => i === j ? 1 : 0));
+    let U = A.map(r => [...r]);
+    
+    let steps = ["<h4>Step 1: Decomposition (Find L and U)</h4>"];
+    steps.push(`<p>Initial <b>U</b> (copy of A) and <b>L</b> (Identity matrix):</p>`);
+    steps.push(formatLUMatrices(L, U));
+
+    for (let i = 0; i < n; i++) {
+        for (let k = i + 1; k < n; k++) {
+            let factor = U[k][i] / U[i][i];
+            L[k][i] = factor;
+            
+            steps.push(`<p>Eliminating U[${k+1},${i+1}] using factor ${factor.toFixed(3)} (Row ${k+1} - ${factor.toFixed(3)}*Row ${i+1})</p>`);
+            
+            for (let j = i; j < n; j++) {
+                U[k][j] -= factor * U[i][j];
+            }
+            steps.push(formatLUMatrices(L, U));
+        }
+    }
+
+    steps.push("<h4>Step 2: Forward Substitution (Solve Ly = B)</h4>");
+    let y = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+        let s = 0;
+        for (let j = 0; j < i; j++) s += L[i][j] * y[j];
+        y[i] = B[i] - s;
+        steps.push(`<p>c${i+1} = ${B[i]} - (${s.toFixed(3)}) = <b>${y[i].toFixed(4)}</b></p>`);
+    }
+
+    steps.push("<h4>Step 3: Backward Substitution (Solve Ux = y)</h4>");
+    let x = new Array(n).fill(0);
+    for (let i = n - 1; i >= 0; i--) {
+        let s = 0;
+        for (let j = i + 1; j < n; j++) s += U[i][j] * x[j];
+        x[i] = (y[i] - s) / U[i][i];
+        steps.push(`<p>x${i+1} = (${y[i].toFixed(3)} - ${s.toFixed(3)}) / ${U[i][i].toFixed(3)} = <b>${x[i].toFixed(4)}</b></p>`);
+    }
+
+    steps.push("<hr><h4>Final Solutions:</h4>");
+    let finalResults = x.map((v, i) => 
+        `<p>x${i+1} = <span class="ans-highlight">${v.toFixed(6)}</span></p>`
+    ).join('');
+    
+    steps.push(finalResults);
+
+    openModal("LU Decomposition Step-by-Step", steps.join(''));
+}
+/* Renders the current L and U matrices side-by-side as HTML tables */
+function formatLUMatrices(L, U) {
+    let html = "<div style='display:flex; gap:20px; overflow-x:auto;'>";
+
+    html += "<div><b>L:</b><table>";
+    L.forEach(row => {
+        html += "<tr>" + row.map(v => `<td>${v.toFixed(3)}</td>`).join('') + "</tr>";
+    });
+    html += "</table></div>";
+
+    html += "<div><b>U:</b><table>";
+    U.forEach(row => {
+        html += "<tr>" + row.map(v => `<td>${v.toFixed(3)}</td>`).join('') + "</tr>";
+    });
+    html += "</table></div></div>";
+    
+    return html;
+}
+/* Solves [A]{x}={B} using Cramer's Rule: computes the main determinant D,
+   then for each variable replaces one column of A with B to get Di, and xi = Di/D */
+function calcCramer() {
+    let { A, B, n } = getMatrix();
+
+    const det = (m) => {
+        if (m.length === 1) return m[0][0];
+        if (m.length === 2) return m[0][0] * m[1][1] - m[0][1] * m[1][0];
+        return m[0].reduce((s, c, i) => s + (i % 2 ? -1 : 1) * c * det(m.slice(1).map(r => r.filter((_, j) => i !== j))), 0);
+    };
+
+    let steps = ["<h4>Step 1: Calculate the Main Determinant (D)</h4>"];
+    let dMain = det(A);
+    steps.push(`<p>Matrix [A]:</p>${formatMatrixTable(A)}`);
+    steps.push(`<p><b>D = ${dMain.toFixed(4)}</b></p>`);
+
+    if (Math.abs(dMain) < 1e-10) {
+        openModal("Cramer's Rule", "<p class='error'>D = 0. The system has no unique solution.</p>");
+        return;
+    }
+
+    steps.push("<hr><h4>Step 2: Calculate Determinants for each Variable (Di)</h4>");
+    let solutions = [];
+
+    for (let i = 0; i < n; i++) {
+        let Ai = A.map((row, rowIndex) => row.map((val, colIndex) => colIndex === i ? B[rowIndex] : val));
+        let di = det(Ai);
+        let xi = di / dMain;
+        solutions.push(xi);
+
+        steps.push(`<p><b>D<sub>${i + 1}</sub></b> (Replace column ${i + 1} with Constants [B]):</p>`);
+        steps.push(formatMatrixTable(Ai));
+        steps.push(`<p>D<sub>${i + 1}</sub> = ${di.toFixed(4)}</p>`);
+        steps.push(`<p>x<sub>${i + 1}</sub> = D<sub>${i + 1}</sub> / D = ${di.toFixed(4)} / ${dMain.toFixed(4)} = <b>${xi.toFixed(4)}</b></p><br>`);
+    }
+
+    steps.push("<hr><h4>Final Solutions:</h4>");
+    steps.push(solutions.map((v, i) => 
+        `<p>x${i+1} = <span class="ans-highlight">${v.toFixed(6)}</span></p>`
+    ).join(''));
+
+    openModal("Cramer's Rule Step-by-Step", steps.join(''));
+}
+
+/* Renders a 2D matrix as a plain HTML table with a thin border */
+function formatMatrixTable(matrix) {
+    let html = "<table style='margin: 10px 0; border: 1px solid #555;'>";
+    matrix.forEach(row => {
+        html += "<tr>" + row.map(v => `<td style='padding:5px; border:1px solid #444;'>${v.toFixed(2)}</td>`).join('') + "</tr>";
+    });
+    return html + "</table>";
+}
+/* Performs Gauss-Jordan Elimination with partial pivoting on [A|B],
+   reducing the matrix to Reduced Row Echelon Form (RREF) so each
+   variable can be read directly from the B column */
+function calcjordon() {
+    let { A, B, n } = getMatrix();
+    let steps = ["<h4>Step 1: Augmented Matrix [A|B]</h4>"];
+    steps.push(formatJordonStep(A, B));
+
+    for (let i = 0; i < n; i++) {
+        let maxRow = i;
+        for (let k = i + 1; k < n; k++) {
+            if (Math.abs(A[k][i]) > Math.abs(A[maxRow][i])) maxRow = k;
+        }
+        
+        if (maxRow !== i) {
+            [A[i], A[maxRow]] = [A[maxRow], A[i]];
+            [B[i], B[maxRow]] = [B[maxRow], B[i]];
+            steps.push(`<p>Swap Row ${i + 1} with Row ${maxRow + 1} (Pivoting)</p>`);
+            steps.push(formatJordonStep(A, B));
+        }
+
+        let pivot = A[i][i];
+        if (Math.abs(pivot) < 1e-10) continue;
+
+        steps.push(`<p>Divide Row ${i + 1} by ${pivot.toFixed(3)} to make pivot = 1</p>`);
+        for (let j = i; j < n; j++) A[i][j] /= pivot;
+        B[i] /= pivot;
+        steps.push(formatJordonStep(A, B));
+
+        for (let k = 0; k < n; k++) {
+            if (k !== i) {
+                let factor = A[k][i];
+                steps.push(`<p>Row ${k + 1} = Row ${k + 1} - (${factor.toFixed(3)}) * Row ${i + 1}</p>`);
+                for (let j = i; j < n; j++) {
+                    A[k][j] -= factor * A[i][j];
+                }
+                B[k] -= factor * B[i];
+            }
+        }
+        steps.push(formatJordonStep(A, B));
+    }
+
+    steps.push("<hr><h4>Final Solutions (Reduced Row Echelon Form):</h4>");
+    let results = B.map((v, i) => 
+        `<p>x${i + 1} = <span class="ans-highlight">${v.toFixed(6)}</span></p>`
+    ).join('');
+    steps.push(results);
+
+    openModal("Gauss-Jordan Elimination Steps", steps.join('<hr>'));
+}
+/* Renders the augmented matrix [A|B] as an HTML table for Gauss-Jordan steps,
+   highlighting the B column with an accent-colored left border */
+function formatJordonStep(A, B) {
+    let html = "<div class='matrix-container' style='overflow-x:auto;'><table>";
+    for (let i = 0; i < A.length; i++) {
+        html += "<tr>";
+        for (let j = 0; j < A[i].length; j++) {
+            html += `<td>${A[i][j].toFixed(3)}</td>`;
+        }
+        html += `<td style='border-left: 2px solid var(--accent); background: rgba(0,229,255,0.05);'>${B[i].toFixed(3)}</td></tr>`;
+    }
+    return html + "</table></div>";
+}
+/* Solves [A]{x}={B} using Gauss-Jordan with explicit Partial Pivoting:
+   at each column, swaps the row with the largest absolute pivot value
+   to the top before eliminating, improving numerical stability */
+function calcPartial() {
+    let { A, B, n } = getMatrix();
+    let steps = ["<h4>Step 1: Initial Augmented Matrix [A|B]</h4>"];
+    steps.push(formatJordonStep(A, B));
+
+    for (let i = 0; i < n; i++) {
+        steps.push(`<hr><h4>Processing Column ${i + 1}</h4>`);
+
+        let maxRow = i;
+        let maxVal = Math.abs(A[i][i]);
+        
+        for (let k = i + 1; k < n; k++) {
+            if (Math.abs(A[k][i]) > maxVal) {
+                maxVal = Math.abs(A[k][i]);
+                maxRow = k;
+            }
+        }
+
+        if (maxRow !== i) {
+            steps.push(`<p style="color: var(--accent);"><b>Action:</b> Swap Row ${i + 1} with Row ${maxRow + 1} (Pivot ${maxVal.toFixed(2)} is larger than ${Math.abs(A[i][i]).toFixed(2)})</p>`);
+            [A[i], A[maxRow]] = [A[maxRow], A[i]];
+            [B[i], B[maxRow]] = [B[maxRow], B[i]];
+            steps.push(formatJordonStep(A, B));
+        } else {
+            steps.push(`<p><b>Action:</b> No swap needed. Row ${i + 1} already has the maximum pivot in this column.</p>`);
+        }
+
+        let pivot = A[i][i];
+        if (Math.abs(pivot) < 1e-10) {
+            steps.push(`<p class="error">Error: Pivot is zero. System may not have a unique solution.</p>`);
+            break;
+        }
+
+        steps.push(`<p>Normalize Row ${i+1}: Divide by ${pivot.toFixed(3)}</p>`);
+        for (let j = i; j < n; j++) A[i][j] /= pivot;
+        B[i] /= pivot;
+        steps.push(formatJordonStep(A, B));
+
+        steps.push(`<p>Eliminate other entries in Column ${i+1}:</p>`);
+        for (let k = 0; k < n; k++) {
+            if (k !== i) {
+                let factor = A[k][i];
+                if (Math.abs(factor) > 1e-10) {
+                    for (let j = i; j < n; j++) {
+                        A[k][j] -= factor * A[i][j];
+                    }
+                    B[k] -= factor * B[i];
+                }
+            }
+        }
+        steps.push(formatJordonStep(A, B));
+    }
+
+    steps.push("<hr><h4>Final Solutions:</h4>");
+    let results = B.map((v, i) => 
+        `<p>x${i + 1} = <span class="ans-highlight">${v.toFixed(6)}</span></p>`
+    ).join('');
+    steps.push(results);
+
+    openModal("Partial Pivoting Full Solver", steps.join(''));
+}
+/* Renders the augmented matrix [A|B] as an HTML table for partial pivoting steps,
+   with the B column separated by an accent-colored left border */
+function formatPartialStep(A, B) {
+    let html = "<div style='overflow-x:auto;'><table>";
+    for (let i = 0; i < A.length; i++) {
+        html += "<tr>";
+        for (let j = 0; j < A[i].length; j++) {
+            html += `<td>${A[i][j].toFixed(3)}</td>`;
+        }
+        html += `<td style='border-left: 2px solid var(--accent); padding-left: 10px;'>${B[i].toFixed(3)}</td></tr>`;
+    }
+    return html + "</table></div>";
+}
+setInterval(() => {
+    fetch('http://localhost:5050/heartbeat').catch(() => {});
+}, 5000);
+</script>
+</body>
+</html>
